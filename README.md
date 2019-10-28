@@ -1,1 +1,1 @@
-# docker-cakephp2.6
+# docker-cakephp2.x
