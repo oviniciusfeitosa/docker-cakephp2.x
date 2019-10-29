@@ -1,0 +1,96 @@
+version: '3.5'
+services:
+  database-service:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cake -d cake || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    image: postgres:10
+    container_name: cake-database
+    environment:
+    - POSTGRES_PASSWORD=senhacake
+    - POSTGRES_USER=cake
+    - POSTGRES_DB=cake
+    - POSTGRES_DB_TEST=cake-test
+    ports:
+    - "5433:5432"
+    expose:
+    - "5432"
+    volumes:
+    - ./database/docker-data/postgres:/var/lib/postgresql/data
+    - ./database/:/docker-entrypoint-initdb.d/
+    networks:
+    - cake_network
+  webapp-service:
+    #    build: ./webapp
+    image: node:10
+    container_name: cake-web
+    #user: "node"
+    user: "root"
+    working_dir: /home/node/app
+    #    healthcheck:
+    #      test: ["CMD", "curl", "-sS", "http://localhost:8080"]
+    #      #      test: ["CMD-SHELL", "node /home/node/app/healthcheck.js"]
+    #      interval: 20s
+    #      timeout: 5s
+    #      retries: 3
+    volumes:
+    - ./webapp:/home/node/app
+    command:
+      #      sh -c 'npm i && npm run serve'
+      #sh -c 'npm run serve'
+      sh -c 'npm i && npm run build'
+    #      sh -c 'npm run watch'
+    ports:
+    - "8080:8080"
+    environment:
+    - NODE_ENV=development
+    networks:
+    - cake_network
+
+  api-service:
+    container_name: cake-api
+    build: ./api
+    image: cidadania/cake-php-fpm:1.2.1
+    working_dir: /application
+    volumes:
+    - ./api:/application
+    - ./api/docker/php-fpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
+    environment:
+    - APP_ENV=local
+    depends_on:
+    - database-service
+    links:
+    - database-service
+    # CONTAINER:ALIAS
+    restart: on-failure
+    networks:
+    - cake_network
+
+  webserver-service:
+    build:
+      context: ./api
+      dockerfile: WebserverDockerfile
+      args:
+        EXPOSE_PORT: 80
+    image: cidadania/cake-webserver-nginx:1.0.0
+    container_name: cake-webserver
+    working_dir: /application
+    volumes:
+    - ./api:/application
+    - ./api/docker/webserver/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+    - "88:80"
+    depends_on:
+    - api-service
+    networks:
+    - cake_network
+    -
+# 7.3.11-apache-buster
+# docker network create cake_network
+
+networks:
+  cake_network:
+    name: cake_network
+    driver: bridge
