@@ -24,6 +24,7 @@ services:
     - cake_network
   webapp-service:
     #    build: ./webapp
+    build: webapp/.
     image: node:10
     container_name: cake-web
     #user: "node"
@@ -49,45 +50,14 @@ services:
     networks:
     - cake_network
 
-  api-service:
-    container_name: cake-api
-    build: ./api
-    image: cidadania/cake-php-fpm:1.2.1
-    working_dir: /application
-    volumes:
-    - ./api:/application
-    - ./api/docker/php-fpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
-    environment:
-    - APP_ENV=local
-    depends_on:
-    - database-service
-    links:
-    - database-service
-    # CONTAINER:ALIAS
-    restart: on-failure
-    networks:
-    - cake_network
 
-  webserver-service:
-    build:
-      context: ./api
-      dockerfile: WebserverDockerfile
-      args:
-        EXPOSE_PORT: 80
-    image: cidadania/cake-webserver-nginx:1.0.0
-    container_name: cake-webserver
-    working_dir: /application
-    volumes:
-    - ./api:/application
-    - ./api/docker/webserver/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-    ports:
-    - "88:80"
-    depends_on:
-    - api-service
-    networks:
-    - cake_network
-    -
-# 7.3.11-apache-buster
+      ports:
+        - "8090:80"
+      volumes:
+        - ~/my/local/path/html:/var/www/html
+      external_links:
+        - docker-mysql:db
+      network_mode: bridge
 # docker network create cake_network
 
 networks:
