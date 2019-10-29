@@ -7,7 +7,7 @@ services:
       timeout: 5s
       retries: 3
     image: postgres:10
-    container_name: cake-database
+    container_name: database-container
     environment:
     - POSTGRES_PASSWORD=senhacake
     - POSTGRES_USER=cake
@@ -25,39 +25,18 @@ services:
   webapp-service:
     #    build: ./webapp
     build: webapp/.
-    image: node:10
-    container_name: cake-web
-    #user: "node"
-    user: "root"
-    working_dir: /home/node/app
-    #    healthcheck:
-    #      test: ["CMD", "curl", "-sS", "http://localhost:8080"]
-    #      #      test: ["CMD-SHELL", "node /home/node/app/healthcheck.js"]
-    #      interval: 20s
-    #      timeout: 5s
-    #      retries: 3
+    image: vinnyfs89/docker-cakephp2x
+    container_name: webapp-container
     volumes:
-    - ./webapp:/home/node/app
-    command:
-      #      sh -c 'npm i && npm run serve'
-      #sh -c 'npm run serve'
-      sh -c 'npm i && npm run build'
-    #      sh -c 'npm run watch'
-    ports:
-    - "8080:8080"
+    - ./webapp:/var/www/html
+#    ports:
+#    - "8080:8080"
     environment:
     - NODE_ENV=development
     networks:
     - cake_network
-
-
-      ports:
-        - "8090:80"
-      volumes:
-        - ~/my/local/path/html:/var/www/html
-      external_links:
-        - docker-mysql:db
-      network_mode: bridge
+    links:
+      - database-service:db
 # docker network create cake_network
 
 networks:
